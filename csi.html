@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prod - Modern Productivity Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Reset & base */
+  * {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0; 
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #1d4ed8 100%);
+    color: #1f2937;
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+  }
+  
+  button {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  
+  button:hover {
+    transform: translateY(-1px);
+  }
+  
+  /* Welcome overlay for new users */
+  #welcome-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(37, 99, 235, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  #welcome-card {
+    background: white;
+    border-radius: 24px;
+    padding: 48px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.4s ease;
+  }
+  
+  #welcome-card h1 {
+    margin: 0 0 16px 0;
+    font-size: 32px;
+    color: #1f2937;
+    font-weight: 700;
+  }
+  
+  #welcome-card p {
+    margin: 0 0 32px 0;
+    color: #6b7280;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  
+  #start-btn {
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+  }
+  
+  /* Sidebar */
+  #sidebar {
+    width: 300px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    padding: 32px 24px;
+    overflow-y: auto;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.08);
+  }
+  
+  #sidebar h2 {
+    margin: 0 0 24px 0;
+    font-weight: 700;
+    font-size: 24px;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  #sidebar h2::before {
+    content: "🚀";
+    font-size: 28px;
+  }
+  
+  .user-session {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+  }
+  
+  #pages-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+  }
+  
+  .page-item {
+    padding: 16px 20px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+  }
+  
+  .page-item:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .page-item.active {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
+  }
+  
+  .page-title {
+    flex-grow: 1;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  
+  .page-actions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .page-item:hover .page-actions {
+    opacity: 1;
+  }
+  
+  .page-actions button {
+    padding: 6px 10px;
+    font-size: 11px;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    color: #4b5563;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  
+  .page-item.active .page-actions button {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  #add-page-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 15px;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  }
+  
+  /* Main content */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    margin: 20px 20px 20px 0;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+  }
+  
+  #top-columns {
+    display: flex;
+    gap: 32px;
+    padding: 32px;
+    min-height: 320px;
+    overflow-y: auto;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  
+  .column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .section-title {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  #monthly-goals-column .section-title::before { content: "🎯"; font-size: 24px; }
+  #yearly-goals-column .section-title::before { content: "🚀"; font-size: 24px; }
+  #other-pages-column .section-title::before { content: "📄"; font-size: 24px; }
+  
+  .item {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+  
+  .item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border-color: rgba(37, 99, 235, 0.2);
+  }
+  
+  .item .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .item .item-title {
+    font-weight: 600;
+    font-size: 16px;
+    user-select: none;
+    cursor: pointer;
+    color: #1f2937;
+  }
+  
+  .item-buttons {
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .item:hover .item-buttons {
+    opacity: 1;
+  }
+  
+  .item-buttons button {
+    padding: 8px 14px;
+    font-size: 12px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+    font-weight: 500;
+  }
+  
+  .item-buttons button:hover {
+    background: rgba(37, 99, 235, 0.2);
+  }
+  
+  .item-content {
+    margin-top: 16px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.6;
+    max-height: 140px;
+    overflow-y: auto;
+    color: #6b7280;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  
+  .progress-bar-container {
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    height: 10px;
+    margin-top: 16px;
+    overflow: hidden;
+  }
+  
+  .progress-bar-fill {
+    background: linear-gradient(90deg, #10b981, #059669);
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.4s ease;
+  }
+  
+  .add-goal-btn, #add-other-page-btn {
+    padding: 16px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 15px;
+    margin-top: 12px;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+  }
+  
+  /* Bottom section */
+  #bottom {
+    display: flex;
+    gap: 32px;
+    padding: 32px;
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  #habits, #daily-tasks {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #habits .section-title::before { content: "✅"; font-size: 24px; }
+  #daily-tasks .section-title::before { content: "📝"; font-size: 24px; }
+  
+  #habit-list {
+    overflow-y: auto;
+    flex-grow: 1;
+  }
+  
+  .habit-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+  }
+  
+  .habit-table th {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    padding: 16px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  
+  .habit-table td {
+    padding: 14px 12px;
+    text-align: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  
+  .habit-name-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    font-family: inherit;
+  }
+  
+  .habit-table input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #2563eb;
+  }
+  
+  #add-habit-btn {
+    padding: 16px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 15px;
+    margin-top: 20px;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  }
+  
+  /* Daily tasks */
+  #tasks-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    padding: 20px;
+    min-height: 240px;
+  }
+  
+  .task-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    user-select: none;
+    padding: 12px;
+    border-radius: 12px;
+    transition: background 0.2s ease;
+  }
+  
+  .task-item:hover {
+    background: rgba(255, 255, 255, 0.9);
+  }
+  
+  .task-item input[type="checkbox"] {
+    margin-right: 16px;
+    width: 22px;
+    height: 22px;
+    accent-color: #10b981;
+  }
+  
+  .task-item span {
+    flex-grow: 1;
+    word-break: break-word;
+    font-size: 15px;
+  }
+  
+  .task-input-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  #task-input {
+    flex: 1;
+    padding: 16px 20px;
+    font-size: 15px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    font-family: inherit;
+  }
+  
+  #task-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  #add-task-btn {
+    padding: 16px 24px;
+    font-size: 15px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  }
+  
+  #clear-done-btn {
+    padding: 16px 24px;
+    font-size: 15px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Modal */
+  #modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  #modal {
+    background: white;
+    border-radius: 24px;
+    width: 540px;
+    max-width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.4s ease;
+  }
+  
+  #modal h3 {
+    margin: 0 0 32px 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    font-family: 'Work Sans', sans-serif;
+  }
+  
+  #modal label {
+    margin: 20px 0 12px 0;
+    font-weight: 600;
+    color: #374151;
+    font-size: 15px;
+  }
+  
+  #modal input[type=text], #modal textarea {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 15px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+  
+  #modal input[type=text]:focus, #modal textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  #modal textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+  }
+  
+  #modal-progress-container {
+    margin-top: 20px;
+  }
+  
+  #modal-progress-range {
+    width: 100%;
+    margin-top: 12px;
+    accent-color: #2563eb;
+  }
+  
+  #modal-buttons {
+    margin-top: 40px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+  }
+  
+  #modal-buttons button {
+    padding: 16px 28px;
+    font-size: 15px;
+    border-radius: 16px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  #modal-save-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  }
+  
+  #modal-cancel-btn {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  
+  #modal-delete-btn {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+  }
+  
+  /* Empty states */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #9ca3af;
+    font-style: italic;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    body {
+      flex-direction: column;
+    }
+    
+    #sidebar {
+      width: 100%;
+      height: auto;
+      max-height: 250px;
+      padding: 20px;
+    }
+    
+    #main {
+      margin: 0;
+      border-radius: 0;
+    }
+    
+    #top-columns, #bottom {
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px;
+    }
+    
+    .task-input-container {
+      flex-direction: column;
+    }
+    
+    #modal {
+      padding: 24px;
+      width: 95%;
+    }
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgba(37, 99, 235, 0.3);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(37, 99, 235, 0.5);
+  }
+</style>
+</head>
+<body>
+
+<!-- Welcome overlay for new users -->
+<div id="welcome-overlay">
+  <div id="welcome-card">
+    <h1>Welcome to Prod</h1>
+    <p>Your modern productivity dashboard. Manage goals, track habits, organize tasks, and stay focused on what matters most.</p>
+    <button id="start-btn">Get Started</button>
+  </div>
+</div>
+
+<div id="sidebar">
+  <h2>Prod</h2>
+  <div class="user-session">
+    <div>Session: <span id="session-id"></span></div>
+    <div>Your data is stored locally in this browser</div>
+  </div>
+  <div id="pages-list"></div>
+  <button id="add-page-btn" title="Add Page">+ New Page</button>
+</div>
+
+<div id="main">
+  <div id="top-columns" aria-label="Goals and pages section">
+    <div class="column" id="monthly-goals-column">
+      <div class="section-title">Monthly Goals</div>
+      <div id="monthly-goals"></div>
+      <button class="add-goal-btn" data-type="monthly">+ Monthly Goal</button>
+    </div>
+    <div class="column" id="yearly-goals-column">
+      <div class="section-title">Yearly Goals</div>
+      <div id="yearly-goals"></div>
+      <button class="add-goal-btn" data-type="yearly">+ Yearly Goal</button>
+    </div>
+    <div class="column" id="other-pages-column">
+      <div class="section-title">Other Pages</div>
+      <div id="other-pages"></div>
+      <button id="add-other-page-btn">+ New Page</button>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div id="habits">
+      <div class="section-title">Habit Trackers</div>
+      <div id="habit-list"></div>
+      <button id="add-habit-btn">+ Habit Tracker</button>
+    </div>
+    <div id="daily-tasks">
+      <div class="section-title">Daily Tasks</div>
+      <div id="tasks-list"></div>
+      <div class="task-input-container">
+        <input id="task-input" placeholder="Add a new task..." aria-label="New daily task input" />
+        <button id="add-task-btn" title="Add Task">Add Task</button>
+        <button id="clear-done-btn" title="Clear Done Tasks">Clear Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for editing content -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div id="modal">
+    <h3 id="modal-title">Edit Item</h3>
+    <label for="modal-title-input">Title</label>
+    <input type="text" id="modal-title-input" autocomplete="off" />
+    <label for="modal-content-textarea">Content / Description</label>
+    <textarea id="modal-content-textarea" spellcheck="false" placeholder="Add your content here..."></textarea>
+    <div id="modal-progress-container" style="display:none; margin-top:20px;">
+      <label for="modal-progress-range">Progress: <span id="modal-progress-value">0%</span></label>
+      <input type="range" id="modal-progress-range" min="0" max="100" step="1" />
+    </div>
+    <div id="modal-buttons">
+      <button id="modal-delete-btn">Delete</button>
+      <button id="modal-cancel-btn" class="cancel-btn">Cancel</button>
+      <button id="modal-save-btn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // Generate unique session ID for each user
+  let sessionId = sessionStorage.getItem('prod-session-id');
+  if (!sessionId) {
+    sessionId = 'user-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
+    sessionStorage.setItem('prod-session-id', sessionId);
+  }
+  
+  // Display session ID
+  document.getElementById('session-id').textContent = sessionId.slice(-8);
+  
+  // Utils
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (unsafe) => unsafe.replace(/[&<"']/g, (m) => ({'&':'&amp;', '<':'&lt;', '"':'&quot;', "'":'&#39;'}[m]));
+
+  const STORAGE_KEY = `prod-data-${sessionId}`;
+
+  // Main data object
+  let data = {
+    pages: [],
+    monthlyGoals: [],
+    yearlyGoals: [],
+    habitTrackers: [],
+    dailyTasks: []
+  };
+
+  // State
+  let selectedPageId = null;
+  let editingItem = null;
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        data = {
+          pages: parsed.pages || [],
+          monthlyGoals: parsed.monthlyGoals || [],
+          yearlyGoals: parsed.yearlyGoals || [],
+          habitTrackers: parsed.habitTrackers || [],
+          dailyTasks: parsed.dailyTasks || []
+        };
+      }
+    } catch (e) {
+      console.error('Error loading data:', e);
+      // Reset to default if corrupted
+      data = {
+        pages: [],
+        monthlyGoals: [],
+        yearlyGoals: [],
+        habitTrackers: [],
+        dailyTasks: []
+      };
+    }
+  }
+
+  function saveData() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error('Error saving data:', e);
+      alert('Unable to save data. Your browser storage might be full.');
+    }
+  }
+
+  // Generate unique ID
+  function generateId() {
+    return 'id-' + Math.random().toString(36).slice(2, 12) + '-' + Date.now().toString(36);
+  }
+
+  function showWelcomeIfNeeded() {
+    const hasVisited = localStorage.getItem('prod-visited');
+    if (!hasVisited) {
+      $('welcome-overlay').style.display = 'flex';
+      localStorage.setItem('prod-visited', 'true');
+    } else {
+      $('welcome-overlay').style.display = 'none';
+    }
+  }
+
+  function hideWelcome() {
+    $('welcome-overlay').style.display = 'none';
+  }
+
+  // ================== Rendering Functions ===================
+  function renderPagesList() {
+    const container = $('pages-list');
+    container.innerHTML = '';
+    
+    if (data.pages.length === 0) {
+      container.innerHTML = '<div class="empty-state">No pages yet. Create your first page!</div>';
+      return;
+    }
+    
+    data.pages.forEach(page => {
+      const div = document.createElement('div');
+      div.className = 'page-item' + (selectedPageId === page.id ? ' active' : '');
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'page-title';
+      titleSpan.textContent = page.title || 'Untitled Page';
+      titleSpan.title = page.title || 'Untitled Page';
+      titleSpan.onclick = () => {
+        selectedPageId = page.id;
+        renderPagesList();
+      };
+      div.appendChild(titleSpan);
+
+      const btns = document.createElement('div');
+      btns.className = 'page-actions';
+
+      const openBtn = document.createElement('button');
+      openBtn.textContent = 'Open';
+      openBtn.title = 'Open Page';
+      openBtn.onclick = () => openEditor('page', page.id);
+      btns.appendChild(openBtn);
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.title = 'Edit Page';
+      editBtn.onclick = () => openEditor('page', page.id);
+      btns.appendChild(editBtn);
+
+      const subpageBtn = document.createElement('button');
+      subpageBtn.textContent = '+Sub';
+      subpageBtn.title = 'Add Subpage';
+      subpageBtn.onclick = () => {
+        addPage(page.id);
+      };
+      btns.appendChild(subpageBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Del';
+      delBtn.title = 'Delete Page';
+      delBtn.onclick = () => {
+        if (confirm('Delete this page and all its subpages?')) {
+          deletePage(page.id);
+        }
+      };
+      btns.appendChild(delBtn);
+
+      div.appendChild(btns);
+      container.appendChild(div);
+    });
+  }
+
+  function renderGoals(type) {
+    const container = type === 'monthly' ? $('monthly-goals') : $('yearly-goals');
+    const list = type === 'monthly' ? data.monthlyGoals : data.yearlyGoals;
+    container.innerHTML = '';
+    
+    if (list.length === 0) {
+      container.innerHTML = `<div class="empty-state">No ${type} goals yet. Add your first goal!</div>`;
+      return;
+    }
+    
+    list.forEach(goal => {
+      const div = document.createElement('div');
+      div.className = 'item';
+
+      const titleRow = document.createElement('div');
+      titleRow.className = 'title-row';
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'item-title';
+      titleSpan.textContent = goal.title || 'Untitled Goal';
+      titleSpan.title = goal.title || 'Untitled Goal';
+      titleSpan.onclick = () => openEditor(type + 'Goal', goal.id);
+      titleRow.appendChild(titleSpan);
+
+      const btns = document.createElement('div');
+      btns.className = 'item-buttons';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.title = 'Edit Goal';
+      editBtn.onclick = () => openEditor(type + 'Goal', goal.id);
+      btns.appendChild(editBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete Goal';
+      delBtn.onclick = () => {
+        if (confirm('Delete this goal?')) {
+          deleteGoal(type, goal.id);
+        }
+      };
+      btns.appendChild(delBtn);
+
+      titleRow.appendChild(btns);
+      div.appendChild(titleRow);
+
+      if (goal.content) {
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'item-content';
+        contentDiv.textContent = goal.content;
+        div.appendChild(contentDiv);
+      }
+
+      if (typeof goal.progress === 'number') {
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'progress-bar-container';
+        const progressFill = document.createElement('div');
+        progressFill.className = 'progress-bar-fill';
+        progressFill.style.width = goal.progress + '%';
+        progressContainer.appendChild(progressFill);
+        div.appendChild(progressContainer);
+      }
+
+      container.appendChild(div);
+    });
+  }
+
+  function renderOtherPages() {
+    const container = $('other-pages');
+    container.innerHTML = '';
+    
+    const topLevelPages = data.pages.filter(page => !page.parentId);
+    
+    if (topLevelPages.length === 0) {
+      container.innerHTML = '<div class="empty-state">No pages yet. Create your first page!</div>';
+      return;
+    }
+    
+    topLevelPages.forEach(page => {
+      const div = document.createElement('div');
+      div.className = 'item';
+
+      const titleRow = document.createElement('div');
+      titleRow.className = 'title-row';
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'item-title';
+      titleSpan.textContent = page.title || 'Untitled Page';
+      titleSpan.title = page.title || 'Untitled Page';
+      titleSpan.onclick = () => openEditor('page', page.id);
+      titleRow.appendChild(titleSpan);
+
+      const btns = document.createElement('div');
+      btns.className = 'item-buttons';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.title = 'Edit Page';
+      editBtn.onclick = () => openEditor('page', page.id);
+      btns.appendChild(editBtn);
+
+      const subpageBtn = document.createElement('button');
+      subpageBtn.textContent = '+Sub';
+      subpageBtn.title = 'Add Subpage';
+      subpageBtn.onclick = () => {
+        addPage(page.id);
+      };
+      btns.appendChild(subpageBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete Page';
+      delBtn.onclick = () => {
+        if (confirm('Delete this page and all its subpages?')) {
+          deletePage(page.id);
+        }
+      };
+      btns.appendChild(delBtn);
+
+      titleRow.appendChild(btns);
+      div.appendChild(titleRow);
+
+      const children = getSubpages(page.id);
+      if (children.length) {
+        const subList = document.createElement('div');
+        subList.style.paddingLeft = '20px';
+        subList.style.marginTop = '12px';
+        children.forEach(child => {
+          const subDiv = document.createElement('div');
+          subDiv.className = 'item';
+          subDiv.style.marginTop = '12px';
+          subDiv.style.background = 'rgba(255, 255, 255, 0.7)';
+
+          const subTitleRow = document.createElement('div');
+          subTitleRow.className = 'title-row';
+
+          const subTitleSpan = document.createElement('span');
+          subTitleSpan.className = 'item-title';
+          subTitleSpan.textContent = child.title || 'Untitled Page';
+          subTitleSpan.title = child.title || 'Untitled Page';
+          subTitleSpan.onclick = () => openEditor('page', child.id);
+          subTitleRow.appendChild(subTitleSpan);
+
+          const subBtns = document.createElement('div');
+          subBtns.className = 'item-buttons';
+
+          const subEditBtn = document.createElement('button');
+          subEditBtn.textContent = 'Edit';
+          subEditBtn.title = 'Edit Page';
+          subEditBtn.onclick = () => openEditor('page', child.id);
+          subBtns.appendChild(subEditBtn);
+
+          const subDelBtn = document.createElement('button');
+          subDelBtn.textContent = 'Delete';
+          subDelBtn.title = 'Delete Page';
+          subDelBtn.onclick = () => {
+            if (confirm('Delete this page and all its subpages?')) {
+              deletePage(child.id);
+            }
+          };
+          subBtns.appendChild(subDelBtn);
+
+          subTitleRow.appendChild(subBtns);
+          subDiv.appendChild(subTitleRow);
+
+          subList.appendChild(subDiv);
+        });
+        div.appendChild(subList);
+      }
+
+      container.appendChild(div);
+    });
+  }
+
+  function getSubpages(parentId) {
+    return data.pages.filter(p => p.parentId === parentId);
+  }
+
+  function renderHabitTrackers() {
+    const container = $('habit-list');
+    container.innerHTML = '';
+    
+    if (data.habitTrackers.length === 0) {
+      container.innerHTML = '<div class="empty-state">No habit trackers yet. Start tracking your habits!</div>';
+      return;
+    }
+    
+    data.habitTrackers.forEach(tracker => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      
+      const titleRow = document.createElement('div');
+      titleRow.className = 'title-row';
+
+      const titleInput = document.createElement('input');
+      titleInput.className = 'habit-name-input';
+      titleInput.type = 'text';
+      titleInput.value = tracker.name || '';
+      titleInput.placeholder = 'Habit tracker name';
+      titleInput.onchange = () => {
+        tracker.name = titleInput.value.trim() || 'Unnamed Habit Tracker';
+        saveData();
+      };
+      titleRow.appendChild(titleInput);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.title = 'Delete Habit Tracker';
+      delBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+      delBtn.style.color = 'white';
+      delBtn.style.border = 'none';
+      delBtn.style.borderRadius = '10px';
+      delBtn.style.padding = '8px 14px';
+      delBtn.style.fontSize = '12px';
+      delBtn.onclick = () => {
+        if (confirm('Delete this habit tracker?')) {
+          deleteHabitTracker(tracker.id);
+        }
+      };
+      titleRow.appendChild(delBtn);
+
+      div.appendChild(titleRow);
+
+      const table = document.createElement('table');
+      table.className = 'habit-table';
+      const headerRow = document.createElement('tr');
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      
+      const habitHeader = document.createElement('th');
+      habitHeader.textContent = 'Habit';
+      headerRow.appendChild(habitHeader);
+      days.forEach(day => {
+        const th = document.createElement('th');
+        th.textContent = day;
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+
+      tracker.habits = tracker.habits || [];
+      tracker.habits.forEach((habit, i) => {
+        const row = document.createElement('tr');
+        const habitNameCell = document.createElement('td');
+        const habitNameInput = document.createElement('input');
+        habitNameInput.type = 'text';
+        habitNameInput.className = 'habit-name-input';
+        habitNameInput.value = habit.name || '';
+        habitNameInput.placeholder = 'Habit name';
+        habitNameInput.onchange = () => {
+          habit.name = habitNameInput.value.trim() || 'Unnamed Habit';
+          saveData();
+        };
+        habitNameCell.appendChild(habitNameInput);
+        row.appendChild(habitNameCell);
+
+        days.forEach(day => {
+          const dayCell = document.createElement('td');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          const key = tracker.id + '_' + i + '_' + day;
+          checkbox.checked = tracker.records && tracker.records[key];
+          checkbox.onchange = () => {
+            tracker.records = tracker.records || {};
+            tracker.records[key] = checkbox.checked;
+            saveData();
+          };
+          dayCell.appendChild(checkbox);
+          row.appendChild(dayCell);
+        });
+
+        table.appendChild(row);
+      });
+
+      const addHabitRow = document.createElement('tr');
+      const addHabitCell = document.createElement('td');
+      addHabitCell.colSpan = 8;
+      const addHabitBtn = document.createElement('button');
+      addHabitBtn.textContent = '+ Add Habit';
+      addHabitBtn.style.width = '100%';
+      addHabitBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      addHabitBtn.style.color = 'white';
+      addHabitBtn.style.border = 'none';
+      addHabitBtn.style.borderRadius = '10px';
+      addHabitBtn.style.padding = '10px';
+      addHabitBtn.style.fontWeight = '600';
+      addHabitBtn.onclick = () => {
+        tracker.habits.push({ name: 'New Habit' });
+        saveData();
+        renderHabitTrackers();
+      };
+      addHabitCell.appendChild(addHabitBtn);
+      addHabitRow.appendChild(addHabitCell);
+      table.appendChild(addHabitRow);
+
+      div.appendChild(table);
+      container.appendChild(div);
+    });
+  }
+
+  function renderDailyTasks() {
+    const container = $('tasks-list');
+    container.innerHTML = '';
+    
+    if (data.dailyTasks.length === 0) {
+      container.innerHTML = '<div class="empty-state">No tasks yet. Add your first task below!</div>';
+      return;
+    }
+    
+    data.dailyTasks.forEach(task => {
+      const div = document.createElement('div');
+      div.className = 'task-item';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !!task.done;
+      checkbox.onchange = () => {
+        task.done = checkbox.checked;
+        saveData();
+        renderDailyTasks();
+      };
+
+      const span = document.createElement('span');
+      span.textContent = task.title;
+      if (task.done) {
+        span.style.textDecoration = 'line-through';
+        span.style.opacity = '0.6';
+      }
+
+      div.appendChild(checkbox);
+      div.appendChild(span);
+      container.appendChild(div);
+    });
+  }
+
+  // ================== Action Functions ===================
+  function addPage(parentId = null) {
+    const newPage = {
+      id: generateId(),
+      title: 'New Page',
+      content: '',
+      parentId: parentId || null
+    };
+    data.pages.push(newPage);
+    saveData();
+    renderAll();
+    openEditor('page', newPage.id);
+  }
+
+  function deletePage(id) {
+    function deleteRecursive(pageId) {
+      data.pages = data.pages.filter(p => p.id !== pageId);
+      const children = getSubpages(pageId);
+      children.forEach(child => deleteRecursive(child.id));
+    }
+    deleteRecursive(id);
+    saveData();
+    renderAll();
+  }
+
+  function addGoal(type) {
+    const newGoal = {
+      id: generateId(),
+      title: 'New Goal',
+      content: '',
+      progress: 0
+    };
+    if (type === 'monthly') data.monthlyGoals.push(newGoal);
+    else if (type === 'yearly') data.yearlyGoals.push(newGoal);
+    saveData();
+    renderAll();
+    openEditor(type + 'Goal', newGoal.id);
+  }
+
+  function deleteGoal(type, id) {
+    if (type === 'monthly') {
+      data.monthlyGoals = data.monthlyGoals.filter(g => g.id !== id);
+    } else if (type === 'yearly') {
+      data.yearlyGoals = data.yearlyGoals.filter(g => g.id !== id);
+    }
+    saveData();
+    renderAll();
+  }
+
+  function addHabit() {
+    const newTracker = {
+      id: generateId(),
+      name: 'New Habit Tracker',
+      habits: [],
+      records: {}
+    };
+    data.habitTrackers.push(newTracker);
+    saveData();
+    renderAll();
+  }
+
+  function deleteHabitTracker(id) {
+    data.habitTrackers = data.habitTrackers.filter(h => h.id !== id);
+    saveData();
+    renderAll();
+  }
+
+  function addTask() {
+    const input = $('task-input');
+    const val = input.value.trim();
+    if (!val) return;
+    data.dailyTasks.push({ id: generateId(), title: val, done: false });
+    input.value = '';
+    saveData();
+    renderAll();
+  }
+
+  function clearDoneTasks() {
+    data.dailyTasks = data.dailyTasks.filter(t => !t.done);
+    saveData();
+    renderAll();
+  }
+
+  // Editor modal functions
+  function openEditor(type, id) {
+    editingItem = { type, id };
+    const item = findItem(type, id);
+    if (!item) return alert('Item not found');
+    $('modal-title-input').value = item.title || '';
+    $('modal-content-textarea').value = item.content || '';
+    if (type === 'monthlyGoal' || type === 'yearlyGoal') {
+      $('modal-progress-container').style.display = 'block';
+      $('modal-progress-range').value = item.progress || 0;
+      $('modal-progress-value').textContent = item.progress + '%';
+    } else {
+      $('modal-progress-container').style.display = 'none';
+    }
+    $('modal-overlay').style.display = 'flex';
+    $('modal-title-input').focus();
+  }
+
+  function closeEditor() {
+    editingItem = null;
+    $('modal-overlay').style.display = 'none';
+  }
+
+  function findItem(type, id) {
+    switch (type) {
+      case 'page': return data.pages.find(p => p.id === id);
+      case 'monthlyGoal': return data.monthlyGoals.find(g => g.id === id);
+      case 'yearlyGoal': return data.yearlyGoals.find(g => g.id === id);
+      default: return null;
+    }
+  }
+
+  function saveEditor() {
+    if (!editingItem) return;
+    const item = findItem(editingItem.type, editingItem.id);
+    if (!item) return alert('Item not found');
+    item.title = $('modal-title-input').value.trim() || 'Untitled';
+    item.content = $('modal-content-textarea').value;
+    if (editingItem.type === 'monthlyGoal' || editingItem.type === 'yearlyGoal') {
+      item.progress = +$('modal-progress-range').value || 0;
+    }
+    saveData();
+    renderAll();
+    closeEditor();
+  }
+
+  function deleteEditorItem() {
+    if (!editingItem) return;
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    switch (editingItem.type) {
+      case 'page': deletePage(editingItem.id); break;
+      case 'monthlyGoal': deleteGoal('monthly', editingItem.id); break;
+      case 'yearlyGoal': deleteGoal('yearly', editingItem.id); break;
+    }
+    closeEditor();
+  }
+
+  // ================== Initialization ===================
+  function renderAll() {
+    renderPagesList();
+    renderGoals('monthly');
+    renderGoals('yearly');
+    renderOtherPages();
+    renderHabitTrackers();
+    renderDailyTasks();
+  }
+
+  // Event listeners
+  $('start-btn').onclick = () => hideWelcome();
+  $('add-page-btn').onclick = () => addPage();
+  $('add-other-page-btn').onclick = () => addPage();
+  document.querySelectorAll('.add-goal-btn').forEach(btn => {
+    btn.onclick = () => addGoal(btn.dataset.type);
+  });
+  $('add-habit-btn').onclick = () => addHabit();
+  $('add-task-btn').onclick = () => addTask();
+  $('clear-done-btn').onclick = () => clearDoneTasks();
+
+  $('task-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      addTask();
+    }
+  });
+
+  $('modal-save-btn').onclick = () => saveEditor();
+  $('modal-cancel-btn').onclick = () => closeEditor();
+  $('modal-delete-btn').onclick = () => deleteEditorItem();
+
+  $('modal-overlay').onclick = (e) => {
+    if (e.target === $('modal-overlay')) {
+      closeEditor();
+    }
+  };
+
+  $('modal-progress-range').oninput = function() {
+    $('modal-progress-value').textContent = this.value + '%';
+  };
+
+  loadData();
+  showWelcomeIfNeeded();
+  renderAll();
+})();
+</script>
+
+</body>
+</html>
